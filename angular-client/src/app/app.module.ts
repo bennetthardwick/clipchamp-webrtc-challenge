@@ -8,6 +8,8 @@ import { LobbyComponent } from './lobby/lobby.component';
 import { ChatComponent } from './chat/chat.component';
 import { VideoComponent } from './video/video.component';
 
+import { ChatService } from './chat.service';
+
 const routes: Routes = 
   [
     { path: "", component: LobbyComponent },
@@ -27,7 +29,7 @@ const routes: Routes =
     BrowserModule,
     RouterModule.forRoot(routes)
   ],
-  providers: [],
+  providers: [ChatService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
