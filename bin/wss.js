@@ -6,7 +6,14 @@ const wss = new WebSocketServer({ port: 9090 });
 let users = {};
 
 wss.on('connection', (connection) => {
+
+  connection.send(JSON.stringify({ "hey": "hey" }));
+
   connection.on('message', (message) => {
+
+    if(message === "undefined") return;
+
+    console.log(message);
 
     let data;
     let remoteConnection;
@@ -22,22 +29,25 @@ wss.on('connection', (connection) => {
       case 'login':
 
         if (users[data.name]) {
-          connection.send({ type: 'login', success: false });       
+          connection.send(JSON.stringify({ type: 'login', success: false }));       
         } else {
           users[data.name] = connection;
           connection.name = data.name;
-          connection.send({ type: 'login', success: true });
+          connection.send(JSON.stringify({ type: 'login', success: true }));
         }
 
         break;
 
       case 'offer':
 
+        console.log(users[data.name]);
+
         remoteConnection = users[data.name];
 
         if (remoteConnection) {
+          console.log("message sent");
           connection.otherName = data.name;
-          remoteConnection.send({ type: 'offer', offer: data.offer, name: connection.name });
+          remoteConnection.send(JSON.stringify({ type: 'offer', offer: data.offer, name: connection.name }));
         }
 
       break;
@@ -48,7 +58,7 @@ wss.on('connection', (connection) => {
 
         if (remoteConnection) {
           connection.otherName = data.name;
-          remoteConnection.send({ type: 'answer', answer: data.answer });
+          remoteConnection.send(JSON.stringify({ type: 'answer', answer: data.answer }));
         }
 
       break;
@@ -59,7 +69,7 @@ wss.on('connection', (connection) => {
 
         if (remoteConnection) {
           connection.otherName = data.name;
-          remoteConnection.send({ type: 'candidate', candidate: data.candidate });
+          remoteConnection.send(JSON.stringify({ type: 'candidate', candidate: data.candidate }));
         }
 
       break;
@@ -69,14 +79,14 @@ wss.on('connection', (connection) => {
         remoteConnection = users[data.name];
 
         if (remoteConnection) {
-          remoteConnection.send({ type: 'leave' });
+          remoteConnection.send(JSON.stringify({ type: 'leave' }));
         }
 
       break;
 
       default:
 
-        connection.send({ type: 'error', message: 'Command not found: ' + data.type });
+        connection.send(JSON.stringify({ type: 'error', message: 'Command not found: ' + data.type }));
 
       break;
 
@@ -93,7 +103,7 @@ wss.on('connection', (connection) => {
       if (connection.otherName) {
         let remoteConnection = users[connection.otherName];
         remoteConnection.otherName = null;
-        remoteConnection.send({ type: 'leave' });
+        remoteConnection.send(JSON.stringify({ type: 'leave' }));
       }
 
     }
