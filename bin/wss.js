@@ -4,10 +4,13 @@ const WebSocketServer = require('ws').Server;
 const wss = new WebSocketServer({ port: 9090 });
 
 let users = {};
+let socketStarted = false;
+
+// enableSocketDeadChecking();
 
 wss.on('connection', (connection) => {
-
-  connection.send(JSON.stringify({ "hey": "hey" }));
+  
+  socketStarted = true;
 
   connection.on('message', (message) => {
 
@@ -26,13 +29,23 @@ wss.on('connection', (connection) => {
     }
 
     switch (data.type) {
+
+      case 'lobby':
+        connection.send(JSON.stringify({ type: 'lobby', data: Object.keys(users) }));
+      break;
+
       case 'login':
 
         if (users[data.name]) {
           connection.send(JSON.stringify({ type: 'login', success: false }));       
         } else {
+
           users[data.name] = connection;
           connection.name = data.name;
+          connection.isFlaggedForDeletion = false;
+
+          broadcastLobby();
+
           connection.send(JSON.stringify({ type: 'login', success: true }));
         }
 
@@ -60,6 +73,13 @@ wss.on('connection', (connection) => {
           connection.otherName = data.name;
           remoteConnection.send(JSON.stringify({ type: 'answer', answer: data.answer }));
         }
+
+      break;
+
+      case 'pong':
+
+        if (users[connection.name])
+          users[connection.name].isFlaggedForDeletion = false;
 
       break;
 
@@ -100,8 +120,9 @@ wss.on('connection', (connection) => {
     if (connection.name) {
       delete users[connection.name];
 
-      if (connection.otherName) {
-        let remoteConnection = users[connection.otherName];
+      let remoteConnection = users[connection.otherName];
+      
+      if (connection.otherName && remoteConnection) {
         remoteConnection.otherName = null;
         remoteConnection.send(JSON.stringify({ type: 'leave' }));
       }
@@ -111,3 +132,39 @@ wss.on('connection', (connection) => {
   });
 
 });
+
+function broadcastLobby() {
+  wss.clients.forEach((conn) => {
+    try {
+      conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users) }));
+    } catch (e) {
+
+      console.log(conn.name);
+
+      delete conn;
+    }
+  });
+}
+
+/* function enableSocketDeadChecking() {
+
+  let clearSockets = () => {
+
+    if(socketStarted) {
+      for (user in users) {
+        if (users[user].isFlaggedForDeletion) {
+          users[user].close();
+          delete users[user];
+        } else {
+          users[user].send(JSON.stringify({ type: 'ping' }));
+          users[user].isFlaggedForDeletion = true;
+        }
+      }
+
+      broadcastLobby();
+    }  
+  }
+
+  setInterval(clearSockets, 3000);
+
+} */
