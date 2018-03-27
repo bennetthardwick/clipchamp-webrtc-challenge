@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule, Routes } from '@angular/router';
 import { NgModule } from '@angular/core';
-
+import { FormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import { LobbyComponent } from './lobby/lobby.component';
@@ -27,7 +27,8 @@ const routes: Routes =
   ],
   imports: [
     BrowserModule,
-    RouterModule.forRoot(routes)
+    RouterModule.forRoot(routes),
+    FormsModule
   ],
   providers: [ChatService],
   bootstrap: [AppComponent]
