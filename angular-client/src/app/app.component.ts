@@ -20,7 +20,7 @@ export class AppComponent implements OnInit {
   }
 
   login() {
-    this.chatService.login(this.name)
+
   }
 
   connect() {

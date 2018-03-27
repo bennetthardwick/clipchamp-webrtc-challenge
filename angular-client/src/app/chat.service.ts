@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot }    from '@angular/router';
 
 import { Observable, Subject } from 'rxjs';
 
@@ -11,43 +12,25 @@ export class ChatService {
   private dataChannel: RTCDataChannel;
   private receiveChannel: RTCDataChannel;
 
-  private observables: SocketChatEvents = {};
+  private socketEvents: SocketChatEvents = {};
+  private rtcEvents: RTCChatEvents = { message: new Subject() };
 
-  private otherName = "";
+  private nickname;
+  private nicknameSet = false;
+
+  private remoteNickname;
 
   constructor() { 
     this.prepareObservableSocket();
     this.prepareForAnswer();
     this.prepareForCandidate();
     this.prepareForOffer();
-
-    this.onLogin().subscribe(success => {
-      if (success === false) {
-        console.log("Bugger..");
-      } else {
-
-        let config: RTCConfiguration = { iceServers: [{ urls: "stun:stun.1.google.com:19302"}]};
-        this.connection = new RTCPeerConnection(config);
-
-        this.connection.onicecandidate = (event) => {
-
-          console.log(this.otherName);
-
-          if (event.candidate) this.sendMessage({ type: 'candidate', candidate: event.candidate, name: this.otherName });
-        };
-
-        this.connection.ondatachannel = this.listenForDataChannel;
-
-        this.openDataChannel();
-
-      }
-    })
-
+    this.prepareForLogin();
   }
 
   createOfferTo(user: string): void {
 
-    this.otherName = user;
+    this.remoteNickname = user;
 
     this.connection.createOffer()
       .then((offer) => { 
@@ -58,54 +41,55 @@ export class ChatService {
 
   listenForDataChannel(event): void {
     this.receiveChannel = event.channel;
-    this.receiveChannel.onmessage = (msg) => console.log(msg);
+    this.receiveChannel.onmessage = (message) => this.rtcEvents.message.next(message);
   }
 
   openDataChannel(): void {
     this.dataChannel = this.connection.createDataChannel("chat");
-   
-
-    console.log(this.dataChannel);
-
-    this.dataChannel.onopen = () => this.dataChannel.send('heyyyy');
     this.dataChannel.onerror = (err) => console.error(err);
     this.dataChannel.onmessage = (msg) => console.log(msg);
   }
 
   prepareObservableSocket(): void {
-    this.observables = {
+    this.socketEvents = {
       message: new Subject(),
       login: new Subject(),
       offer: new Subject(),
       candidate: new Subject(),
-      answer: new Subject()
+      answer: new Subject(),
+      lobby: new Subject()
     };
 
     this.socket.subscribe((data: any) => {
-      this.observables.message.next(data);
-
-      console.log(data);
+      this.socketEvents.message.next(data);
 
       switch (data.type) {
+        case 'lobby':
+          this.socketEvents.lobby.next(data.data);
+        break;
         case 'login':
-          this.observables.login.next(data.success)
+          this.socketEvents.login.next(data.success)
         break;
 
         case 'offer':
-          this.observables.offer.next({ offer: data.offer, name: data.name })
+          this.socketEvents.offer.next({ offer: data.offer, name: data.name })
         break;
 
         case 'candidate':
-          this.observables.candidate.next(data.candidate);
+          this.socketEvents.candidate.next(data.candidate);
         break;
 
         case 'answer':
-          this.observables.answer.next(data.answer)
+          this.socketEvents.answer.next(data.answer)
+        break;
+
+        case 'ping':
+          this.sendMessage({ type: 'pong' });
         break;
 
       }
 
-    }, (err) => console.log(err), () => console.log('fin'));
+    }, (err) => console.log(err), () => console.log('Socket terminated'));
   };
 
   sendMessage(message) {
@@ -113,20 +97,18 @@ export class ChatService {
   }
 
   sendRTCMessage(message) {
-    console.log("send");
     this.dataChannel.send(message);
   }
 
-  login(name) {
-    this.sendMessage(this.sendMessage({ type: 'login', name: name }));
+  onRTCMessage(): Subject<any> {
+    return this.rtcEvents.message;
   }
+
 
   prepareForOffer () {
     this.onOffer().subscribe((data) => {
 
-      console.log("offer");
-
-      this.otherName = data.name;
+      this.remoteNickname = data.name;
 
       this.connection.setRemoteDescription(new RTCSessionDescription(data.offer));
       this.connection.createAnswer()
@@ -134,6 +116,30 @@ export class ChatService {
           this.connection.setLocalDescription(answer);
           this.sendMessage({ type: 'answer', answer: answer, name: data.name });
         }).catch((err) => console.log(err));
+    });
+  }
+
+  prepareForLogin() {
+    this.onLogin().subscribe(success => {
+      if (success === false) {
+        this.nickname == null;
+        this.nicknameSet = false;
+      } else {
+
+        this.nicknameSet = true;
+
+        let config: RTCConfiguration = { iceServers: [{ urls: "stun:stun.1.google.com:19302"}]};
+        this.connection = new RTCPeerConnection(config);
+
+        this.connection.onicecandidate = (event) => {
+          if (event.candidate) this.sendMessage({ type: 'candidate', candidate: event.candidate, name: this.remoteNickname });
+        };
+
+        this.connection.ondatachannel = this.listenForDataChannel;
+
+        this.openDataChannel();
+
+      }
     });
   }
 
@@ -145,32 +151,54 @@ export class ChatService {
 
   prepareForCandidate() {
     this.onCandidate().subscribe((candidate) => {
-
-      console.log('got the candidate');
-      console.log(this.otherName);
-
       this.connection.addIceCandidate(new RTCIceCandidate(candidate));
     });
   }
 
+  getLobby(): Subject<string[]> {
+    this.sendMessage({ type: 'lobby' });
+    return this.socketEvents.lobby;
+  }
+
+  private closeConnections() {
+    this.connection.close();
+    this.dataChannel.close();
+  }
+
   private onCandidate() {
-    return this.observables.candidate;
+    return this.socketEvents.candidate;
   }
 
   private onOffer() {
-    return this.observables.offer;
+    return this.socketEvents.offer;
   }
 
   private onAnswer() {
-    return this.observables.answer;
+    return this.socketEvents.answer;
   }
 
-  private onLogin() {
-    return this.observables.login;
+  onSuccessfulConnection() {
+
+  }
+
+  onLobby() {
+    return this.socketEvents.lobby;
+  }
+
+  onLogin() {
+    return this.socketEvents.login;
+  }
+
+  sendLogin(user: string) {
+    this.sendMessage({ type: 'login', name: user });
   }
 
   private onMessage() {
-    return this.observables.message;
+    return this.socketEvents.message;
+  }
+
+  isNicknameSet(): boolean {
+    return (this.nicknameSet); 
   }
 
 }
@@ -181,12 +209,9 @@ interface SocketChatEvents {
   offer?: Subject<{ offer: any, name: any}>;
   answer?: Subject<RTCSessionDescription>;
   candidate?: Subject<RTCIceCandidateInit>;
+  lobby?: Subject<string[]>;
 }
 
 interface RTCChatEvents {
   message?: Subject<any>;
-}
-
-function onStateChange(e) {
-  console.log('State change... :', e);
 }

@@ -1,3 +1,5 @@
-<p>
-  lobby works!
-</p>
+<ul>
+  <li *ngFor="let user of lobby">
+    <a routerLink="/chat/u/{{user}}">{{user}}</a>
+  </li>
+</ul>

@@ -7,15 +7,16 @@ import { AppComponent } from './app.component';
 import { LobbyComponent } from './lobby/lobby.component';
 import { ChatComponent } from './chat/chat.component';
 import { VideoComponent } from './video/video.component';
+import { NicknameComponent } from './nickname/nickname.component';
 
 import { ChatService } from './chat.service';
 
 const routes: Routes = 
   [
-    { path: "", component: LobbyComponent },
-    { path: "chat/r/:room", component: ChatComponent },
+    { path: "lobby", component: LobbyComponent },
     { path: "chat/u/:user", component: ChatComponent },
-    { path: "video", component: VideoComponent }
+    { path: "video", component: VideoComponent },
+    { path: "", component: NicknameComponent }
   ];
 
 @NgModule({
@@ -23,7 +24,8 @@ const routes: Routes =
     AppComponent,
     LobbyComponent,
     ChatComponent,
-    VideoComponent
+    VideoComponent,
+    NicknameComponent
   ],
   imports: [
     BrowserModule,
