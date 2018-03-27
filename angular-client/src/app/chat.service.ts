@@ -13,23 +13,27 @@ export class ChatService {
   private receiveChannel: RTCDataChannel;
 
   private socketEvents: SocketChatEvents = {};
-  private rtcEvents: RTCChatEvents = { message: new Subject() };
+  private RTCMessage;
 
   private nickname;
   private nicknameSet = false;
 
   private remoteNickname;
 
+  private offers: any = {};
+  private candidate: any;
+
   constructor() { 
+    this.RTCMessage = new Subject();
     this.prepareObservableSocket();
     this.prepareForAnswer();
     this.prepareForCandidate();
-    this.prepareForOffer();
     this.prepareForLogin();
   }
 
   createOfferTo(user: string): void {
 
+    console.log(this.RTCMessage);
     this.remoteNickname = user;
 
     this.connection.createOffer()
@@ -39,9 +43,10 @@ export class ChatService {
       }).catch((err) => console.log(err));
   }
 
-  listenForDataChannel(event): void {
+  listenForDataChannel = (event) => {
+
     this.receiveChannel = event.channel;
-    this.receiveChannel.onmessage = (message) => this.rtcEvents.message.next(message);
+    this.receiveChannel.onmessage = (message) => this.RTCMessage.next(message.data);
   }
 
   openDataChannel(): void {
@@ -72,11 +77,16 @@ export class ChatService {
         break;
 
         case 'offer':
-          this.socketEvents.offer.next({ offer: data.offer, name: data.name })
+
+          this.offers[data.name] = data.offer;
+          this.socketEvents.offer.next(data.name)
         break;
 
         case 'candidate':
-          this.socketEvents.candidate.next(data.candidate);
+
+          if(data.name == this.remoteNickname)
+            this.candidate = data.candidate;
+
         break;
 
         case 'answer':
@@ -101,22 +111,26 @@ export class ChatService {
   }
 
   onRTCMessage(): Subject<any> {
-    return this.rtcEvents.message;
+    return this.RTCMessage;
   }
 
+  acceptOffer(name) {
 
-  prepareForOffer () {
-    this.onOffer().subscribe((data) => {
+    let offer = this.offers[name];
 
-      this.remoteNickname = data.name;
-
-      this.connection.setRemoteDescription(new RTCSessionDescription(data.offer));
+    if (offer) {
+      this.remoteNickname = name;
+      this.connection.setRemoteDescription(new RTCSessionDescription(offer));
+      this.socketEvents.candidate.next(this.candidate);
       this.connection.createAnswer()
         .then((answer) => {
           this.connection.setLocalDescription(answer);
-          this.sendMessage({ type: 'answer', answer: answer, name: data.name });
+          this.sendMessage({ type: 'answer', answer: answer, name: name });
         }).catch((err) => console.log(err));
-    });
+    } else {
+      throw "err";
+      
+    }    
   }
 
   prepareForLogin() {
@@ -151,7 +165,11 @@ export class ChatService {
 
   prepareForCandidate() {
     this.onCandidate().subscribe((candidate) => {
-      this.connection.addIceCandidate(new RTCIceCandidate(candidate));
+
+      console.log(candidate);
+
+      this.connection.addIceCandidate(new RTCIceCandidate(candidate))
+        .catch(err => console.log(err));
     });
   }
 
@@ -169,11 +187,11 @@ export class ChatService {
     return this.socketEvents.candidate;
   }
 
-  private onOffer() {
+  onOffer() {
     return this.socketEvents.offer;
   }
 
-  private onAnswer() {
+  onAnswer() {
     return this.socketEvents.answer;
   }
 
@@ -187,6 +205,10 @@ export class ChatService {
 
   onLogin() {
     return this.socketEvents.login;
+  }
+
+  receiveMessage(message) {
+    this.RTCMessage.next(message);
   }
 
   sendLogin(user: string) {
@@ -206,7 +228,7 @@ export class ChatService {
 interface SocketChatEvents {
   message?: Subject<any>;
   login?: Subject<boolean>;
-  offer?: Subject<{ offer: any, name: any}>;
+  offer?: Subject<string>;
   answer?: Subject<RTCSessionDescription>;
   candidate?: Subject<RTCIceCandidateInit>;
   lobby?: Subject<string[]>;

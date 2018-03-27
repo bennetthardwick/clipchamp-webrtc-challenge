@@ -12,6 +12,9 @@ export class LobbyComponent implements OnInit {
 
   lobby: string[] = [];
 
+  sentOffer: boolean = false;
+  remoteName: string = "";
+
   constructor(private chatService: ChatService,
               private router: Router ) { }
 
@@ -19,18 +22,31 @@ export class LobbyComponent implements OnInit {
     this.chatService.onLobby()
       .subscribe(lobby => this.lobby = lobby);
 
-    this.chatService.onSuccessfulConnection()
-      /*.subscribe(connectionSuccess => {
-        if (connectionSuccess) this.connectionSuccessful();
-        else this.connectionFailed();
-      });*/
+    this.chatService.onOffer()
+      .subscribe(name => {
+
+        console.log(name);
+
+        console.log('got an offer');
+
+        this.sentOffer = true;
+        this.remoteName = name;
+      })
+
+    this.chatService.onAnswer()
+      .subscribe(() => this.router.navigate(['chat']));
 
     this.chatService.getLobby();
 
   }
 
-  createOffer(user) {
+  offer(user) {
+    this.chatService.createOfferTo(user);
+  }
 
+  accept(name) {
+    this.chatService.acceptOffer(name);
+    this.router.navigate(['chat']);
   }
 
   connectionSuccessful() {

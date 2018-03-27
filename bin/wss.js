@@ -89,7 +89,7 @@ wss.on('connection', (connection) => {
 
         if (remoteConnection) {
           connection.otherName = data.name;
-          remoteConnection.send(JSON.stringify({ type: 'candidate', candidate: data.candidate }));
+          remoteConnection.send(JSON.stringify({ type: 'candidate', candidate: data.candidate, name: data.name }));
         }
 
       break;

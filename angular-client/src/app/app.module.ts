@@ -14,7 +14,7 @@ import { ChatService } from './chat.service';
 const routes: Routes = 
   [
     { path: "lobby", component: LobbyComponent },
-    { path: "chat/u/:user", component: ChatComponent },
+    { path: "chat", component: ChatComponent },
     { path: "video", component: VideoComponent },
     { path: "", component: NicknameComponent }
   ];

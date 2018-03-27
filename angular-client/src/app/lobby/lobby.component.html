@@ -1,5 +1,6 @@
+<div *ngIf="sentOffer">{{remoteName}} <button (click)="accept(remoteName)">accept</button></div>
 <ul>
   <li *ngFor="let user of lobby">
-    <a routerLink="/chat/u/{{user}}">{{user}}</a>
+    <button (click)="offer(user)">{{user}}</button>
   </li>
 </ul>

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
+import { ChangeDetectorRef } from '@angular/core';
+
 import { ChatService } from '../chat.service';
 
 @Component({
@@ -13,17 +15,11 @@ export class ChatComponent implements OnInit {
   message: string = "";
   reply: string = "";
 
-  constructor(private route: ActivatedRoute,
-              private chatService: ChatService) {
+  constructor(private chatService: ChatService, private change: ChangeDetectorRef) {
 
-    this.route.params.subscribe(params => {
-      console.log(params);
-      this.chatService.createOfferTo(params.user);
-      console.log('created offer');
-    });
 
     this.chatService.onRTCMessage()
-      .subscribe(message => this.reply = message);
+      .subscribe(message => { this.reply = message; this.change.detectChanges(); });
 
    }
 
