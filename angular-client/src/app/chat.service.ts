@@ -1,47 +1,40 @@
 import { Injectable } from '@angular/core';
 
+import { Observable } from 'rxjs';
+
 @Injectable()
 export class ChatService {
 
+  private socket = Observable.webSocket('ws://localhost:9090');
   private connections = [];
 
-  constructor() { }
 
-  public sendMessage(channel: RTCDataChannel, message: string) {
-    channel.send(message);
+  constructor() { 
+    this.socket.subscribe((msg) => console.log(msg), (err) => console.log(err), () => console.log('fin'));
+    this.socket.next(JSON.stringify({ hey: "john" }));
   }
 
-  findChannelByUserId(user: string): RTCDataChannel {
-    return null;
-  }
-
-  createConnection(): RTCPeerConnection {
-    return new RTCPeerConnection(null);
-  }
-
-  createDataChannel(connection: RTCPeerConnection): RTCDataChannel {
-    return connection.createDataChannel("send", null);
-  }
-
-  connectConnections(local: RTCPeerConnection, remote: RTCPeerConnection): void {
-
-    local.onicecandidate = (event) => {
-      remote.addIceCandidate(event.candidate);
-    };
-
-    remote.onicecandidate = (event) => {
-      local.addIceCandidate(event.candidate);
-    }
+  sendMessage() {
 
   }
 
-  createRecvCallback(connection: RTCPeerConnection) {
-    connection.ondatachannel = (event) => {
-      let channel = event.channel;
-      channel.onmessage = (event) => console.log(event.data);
-      channel.onopen = (event) => console.log('opened');
-      channel.onclose = (event) => console.log('closed');
-    }
+}
+
+@Injectable()
+export class RTCService {
+
+  constructor() {}
+
+  onAnswer() {
+
+  }
+
+  onOffer() {
+
+  }
+
+  openDataChannel() {
+
   }
 
 }
