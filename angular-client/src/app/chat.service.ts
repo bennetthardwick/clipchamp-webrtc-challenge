@@ -34,8 +34,8 @@ export class ChatService {
 
   createOfferTo(user: string): void {
 
-    console.log(this.RTCMessage);
     this.remoteNickname = user;
+    this.remoteNicknameSet = true;
 
     this.connection.createOffer()
       .then((offer) => { 
@@ -85,8 +85,7 @@ export class ChatService {
 
         case 'candidate':
 
-          if(data.name == this.remoteNickname)
-            this.candidate = data.candidate;
+          this.candidate = data.candidate;
 
         break;
 
@@ -121,6 +120,7 @@ export class ChatService {
 
     if (offer) {
       this.remoteNickname = name;
+      this.remoteNicknameSet = true;
       this.connection.setRemoteDescription(new RTCSessionDescription(offer));
       this.socketEvents.candidate.next(this.candidate);
       this.connection.createAnswer()
