@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
+import { ChatService } from '../chat.service';
+
 @Component({
   selector: 'app-video',
   templateUrl: './video.component.html',
@@ -7,7 +9,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class VideoComponent implements OnInit {
 
-  constructor() { }
+  constructor(private chatService: ChatService) { }
 
   ngOnInit() {
   }
