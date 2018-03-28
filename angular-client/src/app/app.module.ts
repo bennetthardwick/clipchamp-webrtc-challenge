@@ -10,11 +10,12 @@ import { VideoComponent } from './video/video.component';
 import { NicknameComponent } from './nickname/nickname.component';
 
 import { ChatService } from './chat.service';
+import { LobbyAuthGuard, ChatAuthGuard } from './chat-auth-guard.service';
 
 const routes: Routes = 
   [
-    { path: "lobby", component: LobbyComponent },
-    { path: "chat", component: ChatComponent },
+    { path: "lobby", component: LobbyComponent, canActivate: [LobbyAuthGuard] },
+    { path: "chat", component: ChatComponent, canActivate: [ChatAuthGuard] },
     { path: "video", component: VideoComponent },
     { path: "", component: NicknameComponent }
   ];
@@ -32,7 +33,7 @@ const routes: Routes =
     RouterModule.forRoot(routes),
     FormsModule
   ],
-  providers: [ChatService],
+  providers: [ChatService, LobbyAuthGuard, ChatAuthGuard],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

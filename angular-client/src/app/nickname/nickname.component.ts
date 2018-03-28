@@ -18,7 +18,8 @@ export class NicknameComponent implements OnInit {
   ngOnInit() {
     this.chatService.onLogin()
       .subscribe(loginSuccess => {
-        if (loginSuccess) this.router.navigate(['lobby']);
+        console.log(loginSuccess);
+        if (loginSuccess) this.router.navigate(['/lobby']);
         else this.loginFailed();
       });
   }

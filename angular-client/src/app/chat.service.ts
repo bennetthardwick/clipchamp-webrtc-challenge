@@ -16,9 +16,10 @@ export class ChatService {
   private RTCMessage;
 
   private nickname;
-  private nicknameSet = false;
+  private nicknameSet: boolean = false;
 
   private remoteNickname;
+  private remoteNicknameSet: boolean = false;
 
   private offers: any = {};
   private candidate: any;
@@ -220,7 +221,11 @@ export class ChatService {
   }
 
   isNicknameSet(): boolean {
-    return (this.nicknameSet); 
+    return this.nicknameSet; 
+  }
+
+  isRemoteNicknameSet(): boolean {
+    return this.remoteNicknameSet;
   }
 
 }
