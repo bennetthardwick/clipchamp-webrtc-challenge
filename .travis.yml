@@ -2,7 +2,7 @@ sudo: required
 language: node_js
 node_js: 
   - "node"
-  
+
 script: npm test
 
 apt:
@@ -17,7 +17,5 @@ before_install:
   - sh -e /etc/init.d/xvfb start
 
 before_script: 
-  - npm install -g angular-cli
-  - npm install -g karma
-  - npm install 
-  - npm build
+  - npm install -g @angular/cli
+  - npm run install:both
