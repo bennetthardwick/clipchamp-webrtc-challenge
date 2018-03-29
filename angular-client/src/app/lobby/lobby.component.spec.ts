@@ -1,6 +1,12 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { APP_BASE_HREF } from '@angular/common';
+import { RouterModule } from '@angular/router'; 
+import { FormsModule } from '@angular/forms';
 
 import { LobbyComponent } from './lobby.component';
+import { ChatComponent } from '../chat/chat.component';
+
+import { ChatService } from '../chat.service';
 
 describe('LobbyComponent', () => {
   let component: LobbyComponent;
@@ -8,7 +14,9 @@ describe('LobbyComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ LobbyComponent ]
+      declarations: [ LobbyComponent, ChatComponent ],
+      imports: [ FormsModule, RouterModule.forRoot([{ path: 'chat', component: ChatComponent }])],
+      providers: [ ChatService, { provide: APP_BASE_HREF, useValue: '/' } ]
     })
     .compileComponents();
   }));
