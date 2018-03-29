@@ -15,7 +15,7 @@ export class ChatService {
   private socketEvents: SocketChatEvents = {};
   private RTCMessage;
 
-  private nickname;
+  private nickname: string;
   private nicknameSet: boolean = false;
 
   private remoteNickname;
@@ -179,6 +179,14 @@ export class ChatService {
     return this.socketEvents.lobby;
   }
 
+  getNickname(): string {
+    return this.nickname;
+  }
+
+  getRemoteNickname(): string {
+    return this.remoteNickname;
+  }
+
   private closeConnections() {
     this.connection.close();
     this.dataChannel.close();
@@ -212,8 +220,9 @@ export class ChatService {
     this.RTCMessage.next(message);
   }
 
-  sendLogin(user: string) {
-    this.sendMessage({ type: 'login', name: user });
+  sendLogin(nickname: string) {
+    this.nickname = nickname; 
+    this.sendMessage({ type: 'login', name: nickname });
   }
 
   private onMessage() {

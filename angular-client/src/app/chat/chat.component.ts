@@ -12,14 +12,22 @@ import { ChatService } from '../chat.service';
 })
 export class ChatComponent implements OnInit {
 
+  nickname: string;
+  remoteNickname: string;
+
   message: string = "";
-  reply: string = "";
+  messages: IReply[] = [];
 
   constructor(private chatService: ChatService, private change: ChangeDetectorRef) {
 
+    this.nickname = this.chatService.getNickname();
+    this.remoteNickname = this.chatService.getRemoteNickname();
 
     this.chatService.onRTCMessage()
-      .subscribe(message => { this.reply = message; this.change.detectChanges(); });
+      .subscribe((message: string) => { 
+        this.messages.push({ nickname: this.remoteNickname, message: message }); 
+        this.change.detectChanges(); 
+      });
 
    }
 
@@ -29,6 +37,13 @@ export class ChatComponent implements OnInit {
 
   send() {
     this.chatService.sendRTCMessage(this.message);
+    this.messages.push({ nickname: this.nickname, message: this.message });
+    this.message = "";
   }
 
+}
+
+interface IReply {
+  nickname: string;
+  message: string;
 }
