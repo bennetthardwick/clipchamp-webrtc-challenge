@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
+    "install:both": "npm install && cd angular-client && npm install",
     "build:server": "tsc",
     "build:client": "cd angular-client && ng build",
     "build": "npm run build:server && npm run build:client",
