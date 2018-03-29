@@ -12,6 +12,8 @@ import { NicknameComponent } from './nickname/nickname.component';
 import { ChatService } from './chat.service';
 import { LobbyAuthGuard, ChatAuthGuard } from './chat-auth-guard.service';
 
+import { UIModule } from './ui.module';
+
 const routes: Routes = 
   [
     { path: "lobby", component: LobbyComponent, canActivate: [LobbyAuthGuard] },
@@ -31,7 +33,9 @@ const routes: Routes =
   imports: [
     BrowserModule,
     RouterModule.forRoot(routes),
-    FormsModule
+    FormsModule,
+    UIModule
+
   ],
   providers: [ChatService, LobbyAuthGuard, ChatAuthGuard],
   bootstrap: [AppComponent]
