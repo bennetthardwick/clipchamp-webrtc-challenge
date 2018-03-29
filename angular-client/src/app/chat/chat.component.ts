@@ -36,6 +36,9 @@ export class ChatComponent implements OnInit {
   }
 
   send() {
+
+    if (this.message.replace(/\s/g, "").split("").length <= 0) return;
+
     this.chatService.sendRTCMessage(this.message);
     this.messages.push({ nickname: this.nickname, message: this.message });
     this.message = "";
