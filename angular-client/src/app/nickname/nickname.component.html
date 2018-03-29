@@ -1,2 +1,7 @@
-<input [(ngModel)]="nickname" />
-<button (click)="login()">login</button>
+
+
+<mat-form-field class="example-full-width">
+  <input matInput placeholder="Nickame" [(ngModel)]="nickname" />
+</mat-form-field>
+
+<button mat-raised-button color="primary" (click)="login()">login</button>

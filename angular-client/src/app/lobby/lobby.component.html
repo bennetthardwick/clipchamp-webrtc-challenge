@@ -1,6 +1,8 @@
-<div *ngIf="sentOffer">{{remoteName}} <button (click)="accept(remoteName)">accept</button></div>
-<ul>
-  <li *ngFor="let user of lobby">
-    <button (click)="offer(user)">{{user}}</button>
-  </li>
-</ul>
+<div *ngIf="sentOffer">{{remoteName}} wants to chat. <button mat-raised-button color="primary" (click)="accept(remoteName)">Accept?</button></div>
+Please choose a member of the lobby to connect to.
+<mat-list>
+  <div *ngFor="let user of lobby">
+    <mat-list-item><button mat-raised-button color="primary" (click)="offer(user)">{{user}}</button></mat-list-item>
+    <mat-divider></mat-divider>
+  </div>
+</mat-list>

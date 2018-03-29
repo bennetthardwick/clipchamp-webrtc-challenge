@@ -1,9 +1,9 @@
-<input [(ngModel)]="message" />
-<button (click)="send()">send</button>
+<mat-form-field class="example-full-width">
+  <input matInput placeholder="Message" [(ngModel)]="message" />
+</mat-form-field>
+<button mat-raised-button color="primary"  (click)="send()">send</button>
 <br>
 Messages:
-<ul>
-  <li *ngFor="let reply of messages">
-    {{ reply.nickname }}: {{ reply.message }}
-  </li>
-</ul> 
+<mat-list>
+ <mat-list-item *ngFor="let reply of messages">{{ reply.nickname }} - {{ reply.message }}</mat-list-item>
+</mat-list>

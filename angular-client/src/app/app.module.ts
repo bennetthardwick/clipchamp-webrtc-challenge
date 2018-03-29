@@ -12,6 +12,14 @@ import { NicknameComponent } from './nickname/nickname.component';
 import { ChatService } from './chat.service';
 import { LobbyAuthGuard, ChatAuthGuard } from './chat-auth-guard.service';
 
+// Material UI Components
+import { } from '@angular/material';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatListModule } from '@angular/material/list';
+
 const routes: Routes = 
   [
     { path: "lobby", component: LobbyComponent, canActivate: [LobbyAuthGuard] },
@@ -31,7 +39,14 @@ const routes: Routes =
   imports: [
     BrowserModule,
     RouterModule.forRoot(routes),
-    FormsModule
+    FormsModule,
+
+    BrowserAnimationsModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDividerModule,
+    MatListModule
+
   ],
   providers: [ChatService, LobbyAuthGuard, ChatAuthGuard],
   bootstrap: [AppComponent]
