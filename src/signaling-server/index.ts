@@ -1,12 +1,15 @@
 // Tutorials Point Signalling Server: https://www.tutorialspoint.com/webrtc/webrtc_signaling.htm
 
 const WebSocketServer = require('ws').Server;
-const wss = new WebSocketServer({ port: 9090 });
 
 let users = {};
 let socketStarted = false;
 
 // enableSocketDeadChecking();
+
+export function Start(port: number) {
+
+const wss = new WebSocketServer({ port: port });
 
 wss.on('connection', (connection) => {
   
@@ -139,9 +142,6 @@ function broadcastLobby() {
       conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users) }));
     } catch (e) {
 
-      console.log(conn.name);
-
-      delete conn;
     }
   });
 }
@@ -168,3 +168,5 @@ function broadcastLobby() {
   setInterval(clearSockets, 3000);
 
 } */
+
+}
