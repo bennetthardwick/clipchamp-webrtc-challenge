@@ -1,6 +1,7 @@
 // Tutorials Point Signalling Server: https://www.tutorialspoint.com/webrtc/webrtc_signaling.htm
 
-const WebSocketServer = require('ws').Server;
+import * as _ from 'lodash';
+import { Server as WebSocketServer } from 'ws';
 
 let users = {};
 let socketStarted = false;
@@ -11,11 +12,11 @@ export function Start(port: number) {
 
 const wss = new WebSocketServer({ port: port });
 
-wss.on('connection', (connection) => {
+wss.on('connection', (connection: any) => {
   
   socketStarted = true;
 
-  connection.on('message', (message) => {
+  connection.on('message', (message: string) => {
 
     if(message === "undefined") return;
 
@@ -34,7 +35,7 @@ wss.on('connection', (connection) => {
     switch (data.type) {
 
       case 'lobby':
-        connection.send(JSON.stringify({ type: 'lobby', data: Object.keys(users) }));
+        connection.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== connection.name) }));
       break;
 
       case 'login':
@@ -137,9 +138,14 @@ wss.on('connection', (connection) => {
 });
 
 function broadcastLobby() {
-  wss.clients.forEach((conn) => {
+  wss.clients.forEach((conn: any) => {
     try {
-      conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users) }));
+
+
+      console.log(conn.name);
+
+      conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== conn.name)}));
+
     } catch (e) {
 
     }
