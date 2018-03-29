@@ -9,7 +9,7 @@
     "build": "npm run build:server && npm run build:client",
     "build:start": "npm run build && npm start",
     "start": "node bin/www",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cd angular-client && npm run test:ci"
   },
   "keywords": [],
   "author": "",
