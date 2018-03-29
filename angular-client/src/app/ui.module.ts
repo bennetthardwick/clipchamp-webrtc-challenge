@@ -6,13 +6,17 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 let materialModules: any[] = [
   BrowserAnimationsModule,
   MatInputModule,
   MatButtonModule,
   MatDividerModule,
-  MatListModule
+  MatListModule,
+  MatSnackBarModule,
+  MatProgressBarModule
 ]
 
 @NgModule({

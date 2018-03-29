@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material';
 
 import { ChatService } from '../chat.service';
 
@@ -13,19 +14,19 @@ export class NicknameComponent implements OnInit {
   nickname: string;
 
   constructor(private chatService: ChatService,
-              private router: Router ) { }
+              private router: Router,
+              private snackBar: MatSnackBar ) { }
 
   ngOnInit() {
     this.chatService.onLogin()
       .subscribe(loginSuccess => {
-        console.log(loginSuccess);
         if (loginSuccess) this.router.navigate(['/lobby']);
         else this.loginFailed();
       });
   }
 
   loginFailed() {
-
+    this.snackBar.open('Login failed. Please try again with another nickname.', 'Close', { duration: 2000 });
   }
 
   login() {
