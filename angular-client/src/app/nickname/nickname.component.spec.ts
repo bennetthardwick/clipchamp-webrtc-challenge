@@ -7,6 +7,7 @@ import { LobbyComponent } from '../lobby/lobby.component';
 import { NicknameComponent } from './nickname.component';
 
 import { ChatService } from '../chat.service';
+import { UIModule } from '../ui.module';
 
 describe('NicknameComponent', () => {
   let component: NicknameComponent;
@@ -16,7 +17,7 @@ describe('NicknameComponent', () => {
     TestBed.configureTestingModule({
       declarations: [ NicknameComponent, LobbyComponent ],
       providers: [ ChatService, { provide: APP_BASE_HREF, useValue: '/' }],
-      imports: [ FormsModule, RouterModule.forRoot([ { path: 'lobby', component: LobbyComponent } ])],
+      imports: [ UIModule, FormsModule, RouterModule.forRoot([ { path: 'lobby', component: LobbyComponent } ])],
     })
     .compileComponents();
   }));

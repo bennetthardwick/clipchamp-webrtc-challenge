@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 
 import { ChatComponent } from './chat.component';
 import { ChatService } from '../chat.service';
+import { UIModule } from '../ui.module';
 
 describe('ChatComponent', () => {
   let component: ChatComponent;
@@ -11,7 +12,7 @@ describe('ChatComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [ ChatComponent ],
-      imports: [ FormsModule ],
+      imports: [ UIModule, FormsModule ],
       providers: [ ChatService ]
     })
     .compileComponents();

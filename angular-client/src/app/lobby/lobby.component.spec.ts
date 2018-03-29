@@ -7,6 +7,7 @@ import { LobbyComponent } from './lobby.component';
 import { ChatComponent } from '../chat/chat.component';
 
 import { ChatService } from '../chat.service';
+import { UIModule } from '../ui.module';
 
 describe('LobbyComponent', () => {
   let component: LobbyComponent;
@@ -15,7 +16,7 @@ describe('LobbyComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [ LobbyComponent, ChatComponent ],
-      imports: [ FormsModule, RouterModule.forRoot([{ path: 'chat', component: ChatComponent }])],
+      imports: [ UIModule, FormsModule, RouterModule.forRoot([{ path: 'chat', component: ChatComponent }])],
       providers: [ ChatService, { provide: APP_BASE_HREF, useValue: '/' } ]
     })
     .compileComponents();
