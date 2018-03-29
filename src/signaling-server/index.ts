@@ -18,8 +18,6 @@ wss.on('connection', (connection: any) => {
 
   connection.on('message', (message: string) => {
 
-    if(message === "undefined") return;
-
     console.log(message);
 
     let data;
@@ -31,6 +29,12 @@ wss.on('connection', (connection: any) => {
       console.log('Invalid JSON');
       data = {};
     }
+
+    if (data.name) {
+      data.name = data.name.toLowerCase();
+      data.name = data.name.replace(/\s/g, '');
+    }
+
 
     switch (data.type) {
 
@@ -57,12 +61,9 @@ wss.on('connection', (connection: any) => {
 
       case 'offer':
 
-        console.log(users[data.name]);
-
         remoteConnection = users[data.name];
 
         if (remoteConnection) {
-          console.log("message sent");
           connection.otherName = data.name;
           remoteConnection.send(JSON.stringify({ type: 'offer', offer: data.offer, name: connection.name }));
         }
@@ -140,12 +141,7 @@ wss.on('connection', (connection: any) => {
 function broadcastLobby() {
   wss.clients.forEach((conn: any) => {
     try {
-
-
-      console.log(conn.name);
-
       conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== conn.name)}));
-
     } catch (e) {
 
     }
