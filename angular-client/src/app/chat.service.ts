@@ -13,12 +13,12 @@ export class ChatService {
   private receiveChannel: RTCDataChannel;
 
   private socketEvents: SocketChatEvents = {};
-  private RTCMessage;
+  private RTCMessage: Subject<any>;
 
   private nickname: string;
   private nicknameSet: boolean = false;
 
-  private remoteNickname;
+  private remoteNickname: string;
   private remoteNicknameSet: boolean = false;
 
   private offers: any = {};
@@ -32,6 +32,10 @@ export class ChatService {
     this.prepareForLogin();
   }
 
+  /**
+   * Create and send an offer to a remote user through the signaling server
+   * @param {string} nickname the nickname of the user to send an offer to
+   */
   createOfferTo(user: string): void {
 
     this.remoteNickname = user;
@@ -44,19 +48,172 @@ export class ChatService {
       }).catch((err) => console.log(err));
   }
 
-  listenForDataChannel = (event) => {
+  /**
+   * @param {string} message message to be sent over RTC
+   */
+  sendRTCMessage(message: string): void {
+    this.dataChannel.send(message);
+  }
 
+  /**
+   * Accept an offer from a remote user
+   * @param {string} name the name of the remote user, whose offer you want to accept
+   */
+  acceptOffer(name: string): void {
+
+    let offer = this.offers[name];
+
+    if (offer) {
+      this.remoteNickname = name;
+      this.remoteNicknameSet = true;
+      this.connection.setRemoteDescription(new RTCSessionDescription(offer));
+      this.socketEvents.candidate.next(this.candidate);
+      this.connection.createAnswer()
+        .then((answer) => {
+          this.connection.setLocalDescription(answer);
+          this.sendMessage({ type: 'answer', answer: answer, name: name });
+        }).catch((err) => console.error(err));
+    } else {
+      throw "err";
+    }    
+  }
+
+  /**
+   * Send a message to the signaling server to fetch the lobby
+   * @return {Subject<string[]>} the names of the current members of the lobby
+   */
+  getLobby(): Subject<string[]> {
+    this.sendMessage({ type: 'lobby' });
+    return this.socketEvents.lobby;
+  }
+
+  /**
+   * Return the nickname of the current user
+   * @return {string} nickname
+   */
+  getNickname(): string {
+    return this.nickname;
+  }
+
+  /**
+   * Get the nickname of the currently connected user
+   * @return {string} remote nickname
+   */
+  getRemoteNickname(): string {
+    return this.remoteNickname;
+  }
+
+  /**
+   * @return {Subject<string>} name of the user offering a connection
+   */
+  onOffer(): Subject<string> {
+    return this.socketEvents.offer;
+  }
+
+  /**
+   * @return {Subject<any>} a message sent over RTC
+   */
+  onRTCMessage(): Subject<any> {
+    return this.RTCMessage;
+  }
+
+  /**
+   * @return {Subject<RTCSessionDescription>} answer from a remote user
+   */
+  onAnswer(): Subject<RTCSessionDescription> {
+    return this.socketEvents.answer;
+  }
+
+  /**
+   * A Subject that when subscribed will return the current members of the lobby
+   * @return {Subject<string[]>} the names of the current members of the lobby 
+   */
+  onLobby(): Subject<string[]> {
+    return this.socketEvents.lobby;
+  }
+
+  /**
+   * @return {Subject<boolean>} boolean representing whether the login attempt was successful
+   */
+  onLogin(): Subject<boolean> {
+    return this.socketEvents.login;
+  }
+
+  /**
+   * Send a login message to the signaling server 
+   * @param {string} nickname the nickname to log in using
+   */
+  sendLogin(nickname: string) {
+    this.nickname = nickname; 
+    this.sendMessage({ type: 'login', name: nickname });
+  }
+
+  /**
+   * @return {boolean} bool representing whether the users nickname has been set
+   */
+  isNicknameSet(): boolean {
+    return this.nicknameSet; 
+  }
+
+  /**
+   * @return {boolean} bool representing whether the remote users nickname has been set
+   */
+  isRemoteNicknameSet(): boolean {
+    return this.remoteNicknameSet;
+  }
+
+  /**
+   * Send a message to the signaling server
+   * @param {any} message message to be sent to the signaling server
+   */
+  private sendMessage(message: any): void {
+    this.socket.next(JSON.stringify(message));
+  }
+
+  /**
+   * Sets up listeners that handle a login reply from the signaling server
+   */
+  private prepareForLogin(): void {
+    this.onLogin().subscribe(success => {
+      if (success === false) {
+        this.nickname == null;
+        this.nicknameSet = false;
+      } else {
+
+        this.nicknameSet = true;
+
+        let config: RTCConfiguration = { iceServers: [{ urls: "stun:stun.1.google.com:19302"}]};
+        this.connection = new RTCPeerConnection(config);
+
+        this.connection.onicecandidate = (event) => {
+          if (event.candidate) this.sendMessage({ type: 'candidate', candidate: event.candidate, name: this.remoteNickname });
+        };
+
+        this.openDataChannel();
+        this.connection.ondatachannel = this.listenForDataChannel;
+
+      }
+    });
+  }
+
+  private listenForDataChannel = (event) => {
     this.receiveChannel = event.channel;
     this.receiveChannel.onmessage = (message) => this.RTCMessage.next(message.data);
   }
 
-  openDataChannel(): void {
+  /**
+   * Opens an RTC datachannel and sets up listeners to handle messages
+   */
+  private openDataChannel(): void {
     this.dataChannel = this.connection.createDataChannel("chat");
     this.dataChannel.onerror = (err) => console.error(err);
-    this.dataChannel.onmessage = (msg) => console.log(msg);
+    this.dataChannel.onmessage = (message) => this.RTCMessage.next(message.data);
   }
 
-  prepareObservableSocket(): void {
+  /**
+   * Sets up listeners and observables to handle all events from the signaling server 
+   */
+  private prepareObservableSocket(): void {
     this.socketEvents = {
       message: new Subject(),
       login: new Subject(),
@@ -73,20 +230,18 @@ export class ChatService {
         case 'lobby':
           this.socketEvents.lobby.next(data.data);
         break;
+
         case 'login':
           this.socketEvents.login.next(data.success)
         break;
 
         case 'offer':
-
           this.offers[data.name] = data.offer;
           this.socketEvents.offer.next(data.name)
         break;
 
         case 'candidate':
-
           this.candidate = data.candidate;
-
         break;
 
         case 'answer':
@@ -99,142 +254,44 @@ export class ChatService {
 
       }
 
-    }, (err) => console.log(err), () => console.log('Socket terminated'));
-  };
-
-  sendMessage(message) {
-    this.socket.next(JSON.stringify(message));
+    }, (err) => console.error(err), () => console.log('Socket terminated'));
   }
 
-  sendRTCMessage(message) {
-    this.dataChannel.send(message);
-  }
-
-  onRTCMessage(): Subject<any> {
-    return this.RTCMessage;
-  }
-
-  acceptOffer(name) {
-
-    let offer = this.offers[name];
-
-    if (offer) {
-      this.remoteNickname = name;
-      this.remoteNicknameSet = true;
-      this.connection.setRemoteDescription(new RTCSessionDescription(offer));
-      this.socketEvents.candidate.next(this.candidate);
-      this.connection.createAnswer()
-        .then((answer) => {
-          this.connection.setLocalDescription(answer);
-          this.sendMessage({ type: 'answer', answer: answer, name: name });
-        }).catch((err) => console.log(err));
-    } else {
-      throw "err";
-      
-    }    
-  }
-
-  prepareForLogin() {
-    this.onLogin().subscribe(success => {
-      if (success === false) {
-        this.nickname == null;
-        this.nicknameSet = false;
-      } else {
-
-        this.nicknameSet = true;
-
-        let config: RTCConfiguration = { iceServers: [{ urls: "stun:stun.1.google.com:19302"}]};
-        this.connection = new RTCPeerConnection(config);
-
-        this.connection.onicecandidate = (event) => {
-          if (event.candidate) this.sendMessage({ type: 'candidate', candidate: event.candidate, name: this.remoteNickname });
-        };
-
-        this.connection.ondatachannel = this.listenForDataChannel;
-
-        this.openDataChannel();
-
-      }
-    });
-  }
-
-  prepareForAnswer() {
+  /**
+   * Sets up listeners that handle an answer to an offer from the signaling server
+   */
+  private prepareForAnswer(): void {
     this.onAnswer().subscribe((answer) => {
-      this.connection.setRemoteDescription(new RTCSessionDescription(answer));
+      this.connection.setRemoteDescription(new RTCSessionDescription(answer))
+        .catch(err => console.error(err));
     });
   }
 
-  prepareForCandidate() {
+  /**
+   * Sets up listeners that handles ICE a response from the signaling server with ICE candidates
+   */
+  private prepareForCandidate(): void {
     this.onCandidate().subscribe((candidate) => {
-
-      console.log(candidate);
-
       this.connection.addIceCandidate(new RTCIceCandidate(candidate))
-        .catch(err => console.log(err));
+        .catch(err => console.error(err));
     });
   }
 
-  getLobby(): Subject<string[]> {
-    this.sendMessage({ type: 'lobby' });
-    return this.socketEvents.lobby;
-  }
-
-  getNickname(): string {
-    return this.nickname;
-  }
-
-  getRemoteNickname(): string {
-    return this.remoteNickname;
-  }
-
-  private closeConnections() {
+  private closeConnections(): void {
     this.connection.close();
     this.dataChannel.close();
   }
 
-  private onCandidate() {
+  private onCandidate(): Subject<RTCIceCandidateInit> {
     return this.socketEvents.candidate;
   }
 
-  onOffer() {
-    return this.socketEvents.offer;
-  }
-
-  onAnswer() {
-    return this.socketEvents.answer;
-  }
-
-  onSuccessfulConnection() {
-
-  }
-
-  onLobby() {
-    return this.socketEvents.lobby;
-  }
-
-  onLogin() {
-    return this.socketEvents.login;
-  }
-
-  receiveMessage(message) {
+  private receiveMessage(message: string): void {
     this.RTCMessage.next(message);
   }
 
-  sendLogin(nickname: string) {
-    this.nickname = nickname; 
-    this.sendMessage({ type: 'login', name: nickname });
-  }
-
-  private onMessage() {
+  private onMessage(): Subject<any> {
     return this.socketEvents.message;
-  }
-
-  isNicknameSet(): boolean {
-    return this.nicknameSet; 
-  }
-
-  isRemoteNicknameSet(): boolean {
-    return this.remoteNicknameSet;
   }
 
 }
@@ -246,8 +303,4 @@ interface SocketChatEvents {
   answer?: Subject<RTCSessionDescription>;
   candidate?: Subject<RTCIceCandidateInit>;
   lobby?: Subject<string[]>;
-}
-
-interface RTCChatEvents {
-  message?: Subject<any>;
 }
