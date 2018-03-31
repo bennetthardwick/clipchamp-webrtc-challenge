@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 
 import { ChatService } from './chat.service';
 
@@ -7,28 +7,6 @@ import { ChatService } from './chat.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent implements OnInit {
-
-  name: string = "";
-  remoteName: string = "";
-  message: string = "";
-
+export class AppComponent {
   constructor(private chatService: ChatService) {}
-
-  ngOnInit() {
-
-  }
-
-  login() {
-
-  }
-
-  connect() {
-    this.chatService.createOfferTo(this.remoteName);
-  }
-
-  send() {
-    this.chatService.sendRTCMessage(this.message);
-  }
-
 }

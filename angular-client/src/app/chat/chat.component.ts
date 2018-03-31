@@ -10,7 +10,7 @@ import { ChatService } from '../chat.service';
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements OnInit {
+export class ChatComponent {
 
   nickname: string;
   remoteNickname: string;
@@ -31,14 +31,8 @@ export class ChatComponent implements OnInit {
 
    }
 
-  ngOnInit() {
-
-  }
-
   send() {
-
     if (this.message.replace(/\s/g, "").split("").length <= 0) return;
-
     this.chatService.sendRTCMessage(this.message);
     this.messages.push({ nickname: this.nickname, message: this.message });
     this.message = "";
