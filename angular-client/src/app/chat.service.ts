@@ -14,6 +14,7 @@ export class ChatService {
 
   private socketEvents: SocketChatEvents = {};
   private RTCMessage: Subject<any>;
+  private _error: Subject<any>;
 
   private nickname: string;
   private nicknameSet: boolean = false;
@@ -31,6 +32,9 @@ export class ChatService {
   }
 
   reset() {
+
+    this._error = new Subject();
+
     this.connection = null;
     this.dataChannel = null;
     this.receiveChannel = null;
@@ -46,11 +50,15 @@ export class ChatService {
     this.candidate = null;
 
     this.socket = Observable.webSocket('ws://localhost:9090');
+
     this.RTCMessage = new Subject();
     this.prepareObservableSocket();
     this.prepareForAnswer();
     this.prepareForCandidate();
     this.prepareForLogin();
+
+    this.onError().subscribe(error => console.log('an error happened', error));
+
   }
 
   /**
@@ -65,7 +73,7 @@ export class ChatService {
       .then((offer) => { 
         this.sendMessage({ type: 'offer', offer: offer, name: user }); 
         this.connection.setLocalDescription(offer);
-      }).catch((err) => console.log(err));
+      }).catch((err) => this._error.next(err));
   }
 
   /**
@@ -93,9 +101,9 @@ export class ChatService {
           this.connection.setLocalDescription(answer);
           this.sendMessage({ type: 'answer', answer: answer, name: name });
           this.RTCconnected = true;
-        }).catch((err) => console.error(err));
+        }).catch((err) => this._error.next(err));
     } else {
-      throw "err";
+      this._error.next(new Error("Can't accept offer that doesn't exist."));
     }    
   }
 
@@ -160,6 +168,10 @@ export class ChatService {
     return this.socketEvents.login;
   }
 
+  onError(): Subject<any> {
+    return this._error;
+  }
+
   /**
    * Send a login message to the signaling server 
    * @param {string} nickname the nickname to log in using
@@ -214,7 +226,7 @@ export class ChatService {
         this.connection.ondatachannel = this.listenForDataChannel;
 
       }
-    });
+    }, error => this._error.next(error));
   }
 
   private listenForDataChannel = (event) => {
@@ -227,7 +239,7 @@ export class ChatService {
    */
   private openDataChannel(): void {
     this.dataChannel = this.connection.createDataChannel("chat");
-    this.dataChannel.onerror = (err) => console.error(err);
+    this.dataChannel.onerror = (err) => this._error.next(err);
     this.dataChannel.onmessage = (message) => this.RTCMessage.next(message.data);
   }
 
@@ -275,7 +287,7 @@ export class ChatService {
 
       }
 
-    }, (err) => console.error(err), () => console.log('Socket terminated'));
+    }, (err) => this._error.next(err), () => console.log('Socket terminated'));
   }
 
   /**
@@ -285,8 +297,8 @@ export class ChatService {
     this.onAnswer().subscribe((answer) => {
       this.RTCconnected = true;
       this.connection.setRemoteDescription(new RTCSessionDescription(answer))
-        .catch(err => console.error(err));
-    });
+        .catch(err => this._error.next(err));
+    }, error => this._error.next(error));
   }
 
   /**
@@ -295,8 +307,8 @@ export class ChatService {
   private prepareForCandidate(): void {
     this.onCandidate().subscribe((candidate) => {
       this.connection.addIceCandidate(new RTCIceCandidate(candidate))
-        .catch(err => console.error(err));
-    });
+        .catch(err => this._error.next(err));
+    }, error => this._error.next(error));
   }
 
   private closeConnections(): void {

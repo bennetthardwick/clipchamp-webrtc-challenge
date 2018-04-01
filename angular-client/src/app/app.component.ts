@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { MatSnackBar } from '@angular/material';
 
 import { ChatService } from './chat.service';
 
@@ -8,5 +9,9 @@ import { ChatService } from './chat.service';
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
-  constructor(private chatService: ChatService) {}
+  constructor(private chatService: ChatService,
+              private snackBar: MatSnackBar) {
+    this.chatService.onError()
+      .subscribe(() => this.snackBar.open('An unexpected error occured. Please refresh the page and try again.', 'Close'))
+  }
 }
