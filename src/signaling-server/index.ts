@@ -16,12 +16,10 @@ export function Start(port: number) {
 
   wss.on('connection', (connection: any) => {
     
+    console.log('A user connected to the server.');
     socketStarted = true;
 
     connection.on('message', (message: string) => {
-
-      console.log(message);
-
       let data;
       let remoteConnection;
 
@@ -159,6 +157,7 @@ export function Start(port: number) {
           if (users[user].isFlaggedForDeletion) {
             users[user].close();
             delete users[user];
+            console.log('User has been disconnected.');
           } else {
             users[user].send(JSON.stringify({ type: 'ping' }));
             users[user].isFlaggedForDeletion = true;

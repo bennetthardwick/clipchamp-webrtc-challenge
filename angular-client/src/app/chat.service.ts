@@ -58,7 +58,6 @@ export class ChatService {
    * @param {string} nickname the nickname of the user to send an offer to
    */
   createOfferTo(user: string): void {
-
     this.remoteNickname = user;
     this.remoteNicknameSet = true;
 
@@ -93,6 +92,7 @@ export class ChatService {
         .then((answer) => {
           this.connection.setLocalDescription(answer);
           this.sendMessage({ type: 'answer', answer: answer, name: name });
+          this.RTCconnected = true;
         }).catch((err) => console.error(err));
     } else {
       throw "err";
@@ -283,6 +283,7 @@ export class ChatService {
    */
   private prepareForAnswer(): void {
     this.onAnswer().subscribe((answer) => {
+      this.RTCconnected = true;
       this.connection.setRemoteDescription(new RTCSessionDescription(answer))
         .catch(err => console.error(err));
     });
