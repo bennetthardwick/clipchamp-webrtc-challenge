@@ -6,7 +6,7 @@ import { Observable, Subject } from 'rxjs';
 @Injectable()
 export class ChatService {
 
-  private socket = Observable.webSocket('ws://localhost:9090');
+  private socket;
 
   private connection: RTCPeerConnection;
   private dataChannel: RTCDataChannel;
@@ -19,12 +19,33 @@ export class ChatService {
   private nicknameSet: boolean = false;
 
   private remoteNickname: string;
-  private remoteNicknameSet: boolean = false;
+  private remoteNicknameSet: boolean;
+
+  private RTCconnected: boolean;
 
   private offers: any = {};
   private candidate: any;
 
   constructor() { 
+    this.reset();
+  }
+
+  reset() {
+    this.connection = null;
+    this.dataChannel = null;
+    this.receiveChannel = null;
+
+    this.socketEvents = {};
+
+    this.remoteNickname = null;
+    this.remoteNicknameSet = false;
+
+    this.RTCconnected = false;
+
+    this.offers = {};
+    this.candidate = null;
+
+    this.socket = Observable.webSocket('ws://localhost:9090');
     this.RTCMessage = new Subject();
     this.prepareObservableSocket();
     this.prepareForAnswer();
@@ -37,7 +58,6 @@ export class ChatService {
    * @param {string} nickname the nickname of the user to send an offer to
    */
   createOfferTo(user: string): void {
-
     this.remoteNickname = user;
     this.remoteNicknameSet = true;
 
@@ -72,6 +92,7 @@ export class ChatService {
         .then((answer) => {
           this.connection.setLocalDescription(answer);
           this.sendMessage({ type: 'answer', answer: answer, name: name });
+          this.RTCconnected = true;
         }).catch((err) => console.error(err));
     } else {
       throw "err";
@@ -249,7 +270,7 @@ export class ChatService {
         break;
 
         case 'ping':
-          this.sendMessage({ type: 'pong' });
+          if (!this.RTCconnected) this.sendMessage({ type: 'pong' });
         break;
 
       }
@@ -262,6 +283,7 @@ export class ChatService {
    */
   private prepareForAnswer(): void {
     this.onAnswer().subscribe((answer) => {
+      this.RTCconnected = true;
       this.connection.setRemoteDescription(new RTCSessionDescription(answer))
         .catch(err => console.error(err));
     });

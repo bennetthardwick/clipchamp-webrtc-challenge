@@ -6,169 +6,170 @@ import { Server as WebSocketServer } from 'ws';
 let users = {};
 let socketStarted = false;
 
-// enableSocketDeadChecking();
+
 
 export function Start(port: number) {
 
-const wss = new WebSocketServer({ port: port });
+  enableSocketDeadChecking();
 
-wss.on('connection', (connection: any) => {
-  
-  socketStarted = true;
+  const wss = new WebSocketServer({ port: port });
 
-  connection.on('message', (message: string) => {
+  wss.on('connection', (connection: any) => {
+    
+    console.log('A user connected to the server.');
+    socketStarted = true;
 
-    console.log(message);
+    connection.on('message', (message: string) => {
+      let data;
+      let remoteConnection;
 
-    let data;
-    let remoteConnection;
+      try {
+        data = JSON.parse(message);
+      } catch (e) {
+        console.log('Invalid JSON');
+        data = {};
+      }
 
-    try {
-      data = JSON.parse(message);
-    } catch (e) {
-      console.log('Invalid JSON');
-      data = {};
-    }
-
-    if (data.name) {
-      data.name = data.name.toLowerCase();
-      data.name = data.name.replace(/\s/g, '');
-    }
+      if (data.name) {
+        data.name = data.name.toLowerCase();
+        data.name = data.name.replace(/\s/g, '');
+      }
 
 
-    switch (data.type) {
+      switch (data.type) {
 
-      case 'lobby':
-        connection.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== connection.name) }));
-      break;
+        case 'lobby':
+          connection.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== connection.name) }));
+        break;
 
-      case 'login':
+        case 'login':
 
-        if (users[data.name]) {
-          connection.send(JSON.stringify({ type: 'login', success: false }));       
-        } else {
+          if (users[data.name]) {
+            connection.send(JSON.stringify({ type: 'login', success: false }));       
+          } else {
 
-          users[data.name] = connection;
-          connection.name = data.name;
-          connection.isFlaggedForDeletion = false;
+            users[data.name] = connection;
+            connection.name = data.name;
+            connection.isFlaggedForDeletion = false;
 
-          broadcastLobby();
+            broadcastLobby();
 
-          connection.send(JSON.stringify({ type: 'login', success: true }));
-        }
+            connection.send(JSON.stringify({ type: 'login', success: true }));
+          }
+
+          break;
+
+        case 'offer':
+
+          remoteConnection = users[data.name];
+
+          if (remoteConnection) {
+            connection.otherName = data.name;
+            remoteConnection.send(JSON.stringify({ type: 'offer', offer: data.offer, name: connection.name }));
+          }
 
         break;
 
-      case 'offer':
+        case 'answer':
 
-        remoteConnection = users[data.name];
+          remoteConnection = users[data.name];
 
-        if (remoteConnection) {
-          connection.otherName = data.name;
-          remoteConnection.send(JSON.stringify({ type: 'offer', offer: data.offer, name: connection.name }));
-        }
+          if (remoteConnection) {
+            connection.otherName = data.name;
+            remoteConnection.send(JSON.stringify({ type: 'answer', answer: data.answer }));
+          }
 
-      break;
+        break;
 
-      case 'answer':
+        case 'pong':
 
-        remoteConnection = users[data.name];
+          if (users[connection.name])
+            users[connection.name].isFlaggedForDeletion = false;
 
-        if (remoteConnection) {
-          connection.otherName = data.name;
-          remoteConnection.send(JSON.stringify({ type: 'answer', answer: data.answer }));
-        }
+        break;
 
-      break;
+        case 'candidate':
 
-      case 'pong':
+          remoteConnection = users[data.name];
 
-        if (users[connection.name])
-          users[connection.name].isFlaggedForDeletion = false;
+          if (remoteConnection) {
+            connection.otherName = data.name;
+            remoteConnection.send(JSON.stringify({ type: 'candidate', candidate: data.candidate, name: data.name }));
+          }
 
-      break;
+        break;
 
-      case 'candidate':
+        case 'leave':
 
-        remoteConnection = users[data.name];
+          remoteConnection = users[data.name];
 
-        if (remoteConnection) {
-          connection.otherName = data.name;
-          remoteConnection.send(JSON.stringify({ type: 'candidate', candidate: data.candidate, name: data.name }));
-        }
+          if (remoteConnection) {
+            remoteConnection.send(JSON.stringify({ type: 'leave' }));
+          }
 
-      break;
+        break;
 
-      case 'leave':
+        default:
 
-        remoteConnection = users[data.name];
+          connection.send(JSON.stringify({ type: 'error', message: 'Command not found: ' + data.type }));
 
-        if (remoteConnection) {
+        break;
+
+      }
+
+    });
+
+
+    connection.on("close", () => {
+
+      if (connection.name) {
+        delete users[connection.name];
+
+        let remoteConnection = users[connection.otherName];
+        
+        if (connection.otherName && remoteConnection) {
+          remoteConnection.otherName = null;
           remoteConnection.send(JSON.stringify({ type: 'leave' }));
         }
 
-      break;
-
-      default:
-
-        connection.send(JSON.stringify({ type: 'error', message: 'Command not found: ' + data.type }));
-
-      break;
-
-    }
-
-  });
-
-
-  connection.on("close", () => {
-
-    if (connection.name) {
-      delete users[connection.name];
-
-      let remoteConnection = users[connection.otherName];
-      
-      if (connection.otherName && remoteConnection) {
-        remoteConnection.otherName = null;
-        remoteConnection.send(JSON.stringify({ type: 'leave' }));
       }
 
-    }
+    });
 
   });
 
-});
+  function broadcastLobby() {
+    wss.clients.forEach((conn: any) => {
+      try {
+        conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== conn.name)}));
+      } catch (e) {
 
-function broadcastLobby() {
-  wss.clients.forEach((conn: any) => {
-    try {
-      conn.send(JSON.stringify({ type: 'lobby', data: Object.keys(users).filter(name => name !== conn.name)}));
-    } catch (e) {
-
-    }
-  });
-}
-
-/* function enableSocketDeadChecking() {
-
-  let clearSockets = () => {
-
-    if(socketStarted) {
-      for (user in users) {
-        if (users[user].isFlaggedForDeletion) {
-          users[user].close();
-          delete users[user];
-        } else {
-          users[user].send(JSON.stringify({ type: 'ping' }));
-          users[user].isFlaggedForDeletion = true;
-        }
       }
-
-      broadcastLobby();
-    }  
+    });
   }
 
-  setInterval(clearSockets, 3000);
+  function enableSocketDeadChecking() {
 
-} */
+    let clearSockets = () => {
+
+      if(socketStarted) {
+        for (let user in users) {
+          if (users[user].isFlaggedForDeletion) {
+            users[user].close();
+            delete users[user];
+            console.log('User has been disconnected.');
+          } else {
+            users[user].send(JSON.stringify({ type: 'ping' }));
+            users[user].isFlaggedForDeletion = true;
+          }
+        }
+
+        broadcastLobby();
+      }  
+    }
+
+    setInterval(clearSockets, 3000);
+
+  }
 
 }
