@@ -6,7 +6,7 @@ import { Observable, Subject } from 'rxjs';
 @Injectable()
 export class ChatService {
 
-  private socket = Observable.webSocket('ws://localhost:9090');
+  private socket;
 
   private connection: RTCPeerConnection;
   private dataChannel: RTCDataChannel;
@@ -19,12 +19,33 @@ export class ChatService {
   private nicknameSet: boolean = false;
 
   private remoteNickname: string;
-  private remoteNicknameSet: boolean = false;
+  private remoteNicknameSet: boolean;
+
+  private RTCconnected: boolean;
 
   private offers: any = {};
   private candidate: any;
 
   constructor() { 
+    this.reset();
+  }
+
+  reset() {
+    this.connection = null;
+    this.dataChannel = null;
+    this.receiveChannel = null;
+
+    this.socketEvents = {};
+
+    this.remoteNickname = null;
+    this.remoteNicknameSet = false;
+
+    this.RTCconnected = false;
+
+    this.offers = {};
+    this.candidate = null;
+
+    this.socket = Observable.webSocket('ws://localhost:9090');
     this.RTCMessage = new Subject();
     this.prepareObservableSocket();
     this.prepareForAnswer();
@@ -249,7 +270,7 @@ export class ChatService {
         break;
 
         case 'ping':
-          this.sendMessage({ type: 'pong' });
+          if (!this.RTCconnected) this.sendMessage({ type: 'pong' });
         break;
 
       }
